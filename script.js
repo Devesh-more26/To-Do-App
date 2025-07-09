@@ -8,6 +8,14 @@ const checkbtn = document.querySelector('.checkbtn');
 const tickedbtn = document.querySelector('.tickedbox');
 let ButtonChecked = false;
 
+function getTaskFromStorage() {
+    return JSON.parse(localStorage.getItem("tasks")) || [];
+}
+
+function saveTaskToStorage(tasks) {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
 
 // For the first task only 
 deleteBtn.addEventListener('click', function () {
@@ -36,50 +44,78 @@ tickedbtn.addEventListener('click', function () {
     input.style.opacity = "1";
 });
 
-
-//  for all other cloned tasks 
+// Impelemented LocalStorage 
 addNewTask.addEventListener('click', function (event) {
     event.preventDefault();
 
-    const clone = taskBox.cloneNode(true);
-    clone.querySelector('.input').value = "";
-    // setting to default value for checkbox icon
-    clone.querySelector('.checkbtn').style.zIndex = "0";
-    clone.querySelector('.checkbtn').style.position = "relative";
-    
-    clone.querySelector('.tickedbox').style.zIndex = "-1";
-    clone.querySelector('.tickedbox').style.position = "absolute";
+    const tasks = getTaskFromStorage();
+    const newTask = {
+        text: "",
+        completed: false,
+    };
 
-    clone.querySelector('.input').style.textDecoration = "none";
-    clone.querySelector('.input').style.opacity = "1";
-
-    clone.querySelector('.remove').addEventListener('click', function () {
-        clone.remove();
-    });
-
-    clone.querySelector('.checkbtn').addEventListener('click', function () {
-        clone.querySelector('.checkbtn').style.zIndex = "-1";
-        clone.querySelector('.checkbtn').style.position = "absolute";
-
-        clone.querySelector('.tickedbox').style.zIndex = "0";
-        clone.querySelector('.tickedbox').style.position = "relative";
-
-        clone.querySelector('.input').style.textDecoration = "line-through";
-        clone.querySelector('.input').style.opacity = "0.5";
-
-    });
-
-    clone.querySelector('.tickedbox').addEventListener('click', function () {
-        clone.querySelector('.checkbtn').style.zIndex = "0";
-        clone.querySelector('.checkbtn').style.position = "relative";
-
-        clone.querySelector('.tickedbox').style.zIndex = "-1";
-        clone.querySelector('.tickedbox').style.position = "absolute";
-
-        clone.querySelector('.input').style.textDecoration = "none";
-        clone.querySelector('.input').style.opacity = "1";
-    });
-
-    taskContainer.appendChild(clone);
+    tasks.unshift(newTask);
+    saveTaskToStorage(tasks);
+    renderTasks();
 });
 
+function renderTasks() {
+    taskContainer.innerHTML = "";
+
+    const tasks = getTaskFromStorage();
+
+    tasks.forEach((task, index) => {
+        const clone = taskBox.cloneNode(true);
+        const input = clone.querySelector(".input");
+        const check = clone.querySelector(".checkbtn");
+        const tick = clone.querySelector(".tickedbox");
+
+        input.value = task.text;
+        input.addEventListener('input', function () {
+            tasks[index].text = input.value;
+            saveTaskToStorage(tasks);
+        });
+
+        //Status
+        if (task.completed) {
+            check.style.zIndex = "-1";
+            check.style.position = "absolute";
+
+            tick.style.zIndex = "0";
+            tick.style.position = "relative";
+            input.style.textDecoration = "line-through";
+            input.style.opacity = "0.5";
+        } else {
+            check.style.zIndex = "0";
+            check.style.position = "relative";
+
+            tick.style.zIndex = "-1";
+            tick.style.position = "absolute";
+            input.style.textDecoration = "none";
+            input.style.opacity = "1";
+        }
+
+        check.addEventListener("click", () => {
+            tasks[index].completed = true;
+            saveTaskToStorage(tasks);
+            renderTasks();
+        });
+
+        tick.addEventListener("click", () => {
+            tasks[index].completed = false;
+            saveTaskToStorage(tasks);
+            renderTasks();
+        });
+
+        clone.querySelector(".remove").addEventListener("click", function(){
+            tasks.splice(index, 1);
+            saveTaskToStorage(tasks);
+            renderTasks();
+        });
+
+        taskContainer.appendChild(clone);
+    });
+
+}
+
+window.addEventListener("DOMContentLoaded", renderTasks);
